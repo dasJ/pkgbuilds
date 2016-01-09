@@ -1,3 +1,15 @@
 [submodule "decrypt-initcpio"]
 	path = decrypt-initcpio
 	url = aur@aur.archlinux.org:decrypt-initcpio.git
+[submodule "dvorakng"]
+	path = dvorakng
+	url = aur@aur.archlinux.org:dvorakng.git
+[submodule "serve2d"]
+	path = serve2d
+	url = aur@aur.archlinux.org:serve2d.git
+[submodule "serve2d-git"]
+	path = serve2d-git
+	url = aur@aur.archlinux.org:serve2d-git.git
+[submodule "archivemount"]
+	path = archivemount
+	url = aur@aur.archlinux.org:archivemount.git
