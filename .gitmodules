@@ -1,0 +1,3 @@
+[submodule "decrypt-initcpio"]
+	path = decrypt-initcpio
+	url = aur@aur.archlinux.org:decrypt-initcpio.git
