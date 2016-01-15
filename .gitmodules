@@ -13,3 +13,6 @@
 [submodule "archivemount"]
 	path = archivemount
 	url = aur@aur.archlinux.org:archivemount.git
+[submodule "python2-pysmart"]
+	path = python2-pysmart
+	url = aur@aur.archlinux.org:python2-pysmart.git
