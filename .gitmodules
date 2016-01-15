@@ -19,3 +19,6 @@
 [submodule "python2-libzfs-git"]
 	path = python2-libzfs-git
 	url = aur@aur.archlinux.org:python2-libzfs-git.git
+[submodule "zfsmond-git"]
+	path = zfsmond-git
+	url = aur@aur.archlinux.org:zfsmond-git.git
