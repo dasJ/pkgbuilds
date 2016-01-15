@@ -16,3 +16,6 @@
 [submodule "python2-pysmart"]
 	path = python2-pysmart
 	url = aur@aur.archlinux.org:python2-pysmart.git
+[submodule "python2-libzfs-git"]
+	path = python2-libzfs-git
+	url = aur@aur.archlinux.org:python2-libzfs-git.git
