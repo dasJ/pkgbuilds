@@ -25,3 +25,6 @@
 [submodule "bootchart2-git"]
 	path = bootchart2-git
 	url = aur@aur.archlinux.org:bootchart2-git.git
+[submodule "bootchart2"]
+	path = bootchart2
+	url = aur@archlinux.org:bootchart2
