@@ -22,3 +22,6 @@
 [submodule "zfsmond-git"]
 	path = zfsmond-git
 	url = aur@aur.archlinux.org:zfsmond-git.git
+[submodule "bootchart2-git"]
+	path = bootchart2-git
+	url = aur@aur.archlinux.org:bootchart2-git.git
