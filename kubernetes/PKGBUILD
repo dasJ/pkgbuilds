@@ -1,0 +1,116 @@
+# Maintainer: Janne Heß <jannehess@gmail.com>
+
+pkgbase=kubernetes
+pkgname=('kubernetes_master' 'kubernetes_node' 'kubernetes_base')
+pkgver=1.1.7
+pkgrel=1
+pkgdesc='Container Cluster Manager for Docker'
+groups=('kubernetes')
+depends=('glibc' 'bash')
+makedepends=('go' 'rsync' 'docker')
+optdepends=('etcd: etcd cluster required to run Kubernetes')
+arch=('x86_64')
+url='http://kubernetes.io/'
+license=('Apache')
+source=("https://github.com/${pkgbase}/${pkgbase}/archive/v${pkgver}.tar.gz"
+        "git://github.com/${pkgbase}/contrib"
+        'kubernetes.install')
+sha512sums=('2140dbe1bcb4c0265dc17565eac098bdb82c82f7985ab090cabd783af727c84ea064fd139e8346a078069ddb4721fe6b7df14c65a4ef1003911eeae4923ee5d7'
+            'SKIP'
+            '0b79eb8918681588030696f0fead40b76fd6caadcb8363a906cd42328e91b07fdd2fe4595cd2326a379027646d81830276f1e7334e73bde28aeb752328b4b05f')
+
+build() {
+	cd "${srcdir}/${pkgbase}-${pkgver}"
+
+	hack/build-go.sh --use_go_build \
+		cmd/kube-proxy \
+		cmd/kube-apiserver \
+		cmd/kube-controller-manager \
+		cmd/kubelet \
+		plugin/cmd/kube-scheduler \
+		cmd/kubectl
+}
+
+package_kubernetes_master() {
+	pkgdesc="${pkgdesc} - Run a Kubernetes master node"
+	backup=('etc/kubernetes/apiserver' 'etc/kubernetes/controller-manager' 'etc/kubernetes/scheduler')
+	depends=('glibc' 'bash' 'kubernetes_base')
+	install=kubernetes.install
+
+	cd "${srcdir}/${pkgbase}-${pkgver}"
+
+	# install binaries
+	_binaries=(kube-apiserver kube-controller-manager kube-scheduler)
+	for _bin in "${_binaries[@]}"; do
+		install -Dm755 "_output/local/bin/linux/amd64/${_bin}" "${pkgdir}/usr/bin/${_bin}"
+	done
+
+	# install config files
+	_configs=(apiserver controller-manager scheduler)
+	for _conf in "${_configs[@]}"; do
+		install -Dm644 "${srcdir}/contrib/init/systemd/environ/${_conf}" "${pkgdir}/etc/kubernetes/${_conf}"
+	done
+
+	# install service files
+	_services=(kube-apiserver.service kube-controller-manager.service kube-scheduler.service)
+	for _service in "${_services[@]}"; do
+		install -Dm644 "${srcdir}/contrib/init/systemd/${_service}" "${pkgdir}/usr/lib/systemd/${_service}"
+	done
+
+	# install tmpfiles
+	install -Dm644 "${srcdir}/contrib/init/systemd/tmpfiles.d/kubernetes.conf" "${pkgdir}/usr/lib/tmpfiles.d/kubernetes.conf"
+}
+
+package_kubernetes_node() {
+	pkgdesc="$pkgdesc - Run a Kubernetes worker node"
+	depends=('glibc' 'bash' 'docker' 'kubernetes_base')
+	backup=('etc/kubernetes/kubelet' 'etc/kubernetes/proxy')
+	install=kubernetes.install
+
+	cd "${srcdir}/${pkgbase}-${pkgver}"
+
+	# install binaries
+	_binaries=(kube-proxy kubelet)
+	for _bin in "${_binaries[@]}"; do
+		install -Dm755 "_output/local/bin/linux/amd64/${_bin}" "${pkgdir}/usr/bin/${_bin}"
+	done
+
+	# install config files
+	install -d "${pkgdir}/etc/kubernetes"
+	_configs=(kubelet proxy)
+	for _conf in "${_configs[@]}"; do
+		install -Dm644 "${srcdir}/contrib/init/systemd/environ/${_conf}" "${pkgdir}/etc/kubernetes/${_conf}"
+	done
+
+	# install service files
+	install -d "${pkgdir}/etc/kubernetes"
+	_services=(kube-proxy.service kubelet.service)
+	for _service in "${_services[@]}"; do
+		install -Dm644 "${srcdir}/contrib/init/systemd/${_service}" "${pkgdir}/usr/lib/systemd/${_service}"
+	done
+
+	# install the place the kubelet defaults to put volumes
+	install -dm750 "${pkgdir}/var/lib/kubelet"
+}
+
+package_kubernetes_base() {
+	pkgdesc="$pkgdesc - Base with kubectl, config, and manpages"
+	optdepends=()
+	depends=('glibc' 'bash')
+	backup=('etc/kubernetes/config')
+
+	cd "${srcdir}/${pkgbase}-${pkgver}"
+
+	# install binary
+	install -Dm755 "_output/local/bin/linux/amd64/kubectl" "${pkgdir}/usr/bin/kubectl"
+
+	# install config
+	install -Dm644 "${srcdir}/contrib/init/systemd/environ/config" "${pkgdir}/etc/kubernetes/config"
+
+	# install the bash completion
+	install -Dm644 "contrib/completions/bash/kubectl" "${pkgdir}/usr/share/bash-completion/completions/kubectl"
+
+	# install manpages
+	install -d "${pkgdir}/usr/share/man/man1/"
+	install -Dm644 docs/man/man1/* "${pkgdir}/usr/share/man/man1"
+}
