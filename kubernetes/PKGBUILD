@@ -3,7 +3,7 @@
 pkgbase=kubernetes
 pkgname=('kubernetes_master' 'kubernetes_node' 'kubernetes_base')
 pkgver=1.1.7
-pkgrel=1
+pkgrel=2
 pkgdesc='Container Cluster Manager for Docker'
 groups=('kubernetes')
 depends=('glibc' 'bash')
@@ -54,7 +54,7 @@ package_kubernetes_master() {
 	# install service files
 	_services=(kube-apiserver.service kube-controller-manager.service kube-scheduler.service)
 	for _service in "${_services[@]}"; do
-		install -Dm644 "${srcdir}/contrib/init/systemd/${_service}" "${pkgdir}/usr/lib/systemd/${_service}"
+		install -Dm644 "${srcdir}/contrib/init/systemd/${_service}" "${pkgdir}/usr/lib/systemd/system/${_service}"
 	done
 
 	# install tmpfiles
@@ -86,7 +86,7 @@ package_kubernetes_node() {
 	install -d "${pkgdir}/etc/kubernetes"
 	_services=(kube-proxy.service kubelet.service)
 	for _service in "${_services[@]}"; do
-		install -Dm644 "${srcdir}/contrib/init/systemd/${_service}" "${pkgdir}/usr/lib/systemd/${_service}"
+		install -Dm644 "${srcdir}/contrib/init/systemd/${_service}" "${pkgdir}/usr/lib/systemd/system/${_service}"
 	done
 
 	# install the place the kubelet defaults to put volumes
