@@ -1,0 +1,23 @@
+pre_upgrade() {
+cat << EOF
+	To upgrade an existing etcd deployment to 2.2, you must be running 2.1.
+	If you’re running a version of etcd before 2.1, you must upgrade to 2.1 before upgrading to 2.2.
+        And you should, probably, read the following:
+		/usr/share/doc/etcd/04_to_2_snapshot_migration.md
+		/usr/share/doc/etcd/upgrade_2_1.md
+		/usr/share/doc/etcd/upgrade_2_2.md
+EOF
+}
+
+post_install() {
+	getent passwd etcd &>/dev/null || useradd -mc 'etcd service user' -d '/var/lib/etcd' -s /usr/bin/nologin etcd
+}
+
+post_remove() {
+	getent passwd etcd &>/dev/null && userdel -r etcd || true
+	getent group etcd &>/dev/null && groupdel etcd || true
+}
+
+post_upgrade() {
+	post_install
+}
