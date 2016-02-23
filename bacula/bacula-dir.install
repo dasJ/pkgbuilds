@@ -1,0 +1,15 @@
+post_install() {
+	SERVERNAME=$(hostname -s)
+	sed -i "s/__BASENAME__/${SERVERNAME}/g" /etc/bacula/bacula-dir.conf
+	post_upgrade
+}
+
+post_upgrade() {
+	getent group bacula >/dev/null || groupadd -r bacula
+	getent passwd bacula-dir >/dev/null || useradd -r -g bacula -d / -s /sbin/nologin -c "Bacula director user" bacula-dir
+}
+
+post_remove() {
+	getent passwd bacula-dir >/dev/null && userdel bacula-dir || true
+	getent group bacula >/dev/null && (groupdel bacula || true) || true
+}

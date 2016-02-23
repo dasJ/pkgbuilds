@@ -1,0 +1,249 @@
+# Maintainer: Janne Heß <jannehess@gmail.com>
+
+# Contributor: Tom Keller <tom@isochrono.us>
+# Contributor: Daniel Albers <daniel@lbe.rs>
+# Contributor: Steven Haigh <netwiz@crc.id.au>
+# Contributor: Georg Altmann <george@george-net.de>
+# bacula-fd.service by Christian Hesse <arch@eworm.de>
+
+pkgbase='bacula'
+_dir_backends=("${pkgbase}-dir-postgresql" "${pkgbase}-dir-mariadb" "${pkgbase}-dir-sqlite3")
+pkgname=("${pkgbase}-common" "${pkgbase}-console" "${pkgbase}-bat" "${pkgbase}-fd" "${pkgbase}-sd" "${pkgbase}-dir" ${_dir_backends[@]})
+pkgver=7.4.0
+pkgrel=2
+pkgdesc="${pkgbase^} - A Network Backup Tool"
+makedepends=('sqlite' 'libmariadbclient' 'postgresql-libs' 'qt4')
+optdepends=('openssl: network encryption between daemons')
+arch=('x86_64' 'i686')
+url="http://www.${pkgbase}.org"
+license=('AGPL3')
+source=("http://downloads.sourceforge.net/sourceforge/${pkgbase}/${pkgbase}-${pkgver}.tar.gz"
+        'qmake4.patch')
+sha512sums=('615cb4d9a4fd597bc794b6d4c901c777d544472f3f5b6e1cdc74d8e41279a3fd0bd6d2c30511095933a3a47a7f24da4372c538ab472eb48c0fb1db59c2a59e1a'
+            'eaa2cfbffcf629d3aff7e3691a67fd95d5407f01c8e20dd8972335d2e36d2ea9d72f0e837f4ea0d425c0484c6366f5e6586f1fe7dcf7d53ace87f00500caaef5')
+
+prepare() {
+	cd "${srcdir}/${pkgbase}-${pkgver}"
+	patch -N -i ${srcdir}/qmake4.patch
+}
+
+build() {
+	cd "${srcdir}/${pkgbase}-${pkgver}"
+
+	./configure                                  \
+		--enable-bat                             \
+		--enable-smartalloc                      \
+		--prefix=/usr                            \
+		--sbindir=/usr/bin                       \
+		--sysconfdir=/etc/${pkgbase}             \
+		--with-scriptdir=/etc/${pkgbase}/scripts \
+		--with-sqlite3                           \
+		--with-mysql                             \
+		--with-postgresql                        \
+		--with-pid-dir=/run                      \
+		--with-systemd=/usr/lib/systemd/system   \
+		--with-logdir=/var/log/${pkgbase}        \
+		--with-working-dir=/var/lib/${pkgbase}   \
+		--with-basename=__BASENAME__             \
+		--with-x                                 \
+		--with-fd-user=bacula-fd                 \
+		--with-fd-group=bacula                   \
+		--with-sd-user=bacula-sd                 \
+		--with-sd-group=bacula                   \
+		--with-dir-user=bacula-dir               \
+		--with-dir-group=bacula
+
+	rm -rf "${srcdir}/install"
+	mkdir "${srcdir}/install"
+	make DESTDIR="${srcdir}/install" install
+}
+
+package_bacula-common() {
+	pkgdesc="${pkgdesc} (common files)"
+
+	cd "${srcdir}/install"
+
+	install -dm755 "${pkgdir}/etc/${pkgbase}/scripts"
+	for script in ${pkgbase}_config btraceback.{gdb,dbx,mdb}; do
+		install -Dm644 "etc/${pkgbase}/scripts/${script}" "${pkgdir}/etc/${pkgbase}/scripts/${script}"
+	done
+	install -Dm755 "usr/bin/btraceback" "${pkgdir}/usr/bin/btraceback"
+	for lib in libbac libbaccfg libbacfind; do
+		install -Dm644 "usr/lib/${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}-${pkgver}.so"
+		ln -s "${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}.so"
+	done
+	install -dm755 "${pkgdir}/var/lib/${pkgbase}"
+	install -dm755 "${pkgdir}/var/log/${pkgbase}"
+
+	install -Dm644 usr/share/man/man8/btraceback.8.gz "${pkgdir}/usr/share/man/man8/btraceback.8.gz"
+}
+
+package_bacula-console() {
+	pkgdesc="${pkgdesc} (management CLI)"
+	backup=("etc/${pkgbase}/bconsole.conf")
+	install='bacula-console.install'
+	depends=("${pkgbase}-common=${pkgver}")
+
+	cd "${srcdir}/install"
+
+	install -Dm755 usr/bin/bconsole "${pkgdir}/usr/bin/bconsole"
+	install -Dm644 "etc/${pkgbase}/bconsole.conf" "${pkgdir}/etc/${pkgbase}/bconsole.conf"
+	install -Dm644 usr/share/man/man8/bconsole.8.gz "${pkgdir}/usr/share/man/man8/bconsole.8.gz"
+}
+
+package_bacula-bat() {
+	pkgdesc="${pkgdesc} (management GUI)"
+	backup=("etc/${pkgbase}/bat.conf")
+	depends=("${pkgbase}-common=${pkgver}" 'qt4')
+	install='bacula-bat.install'
+
+	cd "${srcdir}/install"
+
+	# Renaming this to prevent conflict with alsa-utils
+	install -Dm755 "usr/bin/bat" "${pkgdir}/usr/bin/bacula-bat"
+	install -Dm644 "etc/${pkgbase}/bat.conf" "${pkgdir}/etc/${pkgbase}/bat.conf"
+	install -Dm644 "usr/share/man/man1/bat.1.gz" "${pkgdir}/usr/share/man/man1/bat.1.gz"
+
+	install -dm755 "${pkgdir}/usr/share/applications"
+	install -Dm644 "${srcdir}/${pkgbase}-${pkgver}/scripts/bat.desktop" "${pkgdir}/usr/share/applications/bat.desktop"
+	install -Dm644 "${srcdir}/${pkgbase}-${pkgver}/src/qt-console/images/bat_icon.png" "${pkgdir}/usr/share/pixmaps/bat_icon.png"
+}
+
+package_bacula-fd() {
+	pkgdesc="${pkgdesc} (file daemon)"
+	backup=("etc/${pkgbase}/${pkgname}.conf")
+	install='bacula-fd.install'
+	optdepends=(
+		'openssl: network encryption between daemons'
+		'lzo: LZO compression for Storage Daemon')
+	depends=("${pkgbase}-common=${pkgver}")
+
+	cd "${srcdir}/install"
+
+	install -Dm644 "etc/${pkgbase}/${pkgname}.conf" "${pkgdir}/etc/${pkgbase}/${pkgname}.conf"
+	install -Dm755 "usr/bin/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
+	install -Dm644 usr/lib/bpipe-fd.so "${pkgdir}/usr/lib/bpipe-fd.so"
+	install -Dm644 "usr/share/man/man8/${pkgname}.8.gz" "${pkgdir}/usr/share/man/man8/${pkgname}.8.gz"
+
+	install -Dm644 "${srcdir}/${pkgbase}-${pkgver}/platforms/systemd/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
+}
+
+package_bacula-sd() {
+	pkgdesc="${pkgdesc} (Storage Daemon)"
+	backup=("etc/${pkgbase}/${pkgname}.conf")
+	install='bacula-sd.install'
+	depends=("${pkgbase}-common")
+	optdepends=(
+		'openssl: network encryption between daemons'
+		'lzo: LZO compression for Storage Daemon')
+
+	cd "${srcdir}/install"
+
+	install -Dm644 "etc/${pkgbase}/${pkgname}.conf" "${pkgdir}/etc/${pkgbase}/${pkgname}.conf"
+	for bin in "${pkgname}" bextract bls bcopy bscan btape; do
+		install -Dm755 "usr/bin/${bin}" "${pkgdir}/usr/bin/${bin}"
+		install -Dm644 "usr/share/man/man8/${bin}.8.gz" "${pkgdir}/usr/share/man/man8/${bin}.8.gz"
+	done
+
+	install -Dm644 "${srcdir}/${pkgbase}-${pkgver}/platforms/systemd/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
+}
+
+package_bacula-dir() {
+	pkgdesc="${pkgdesc} (Director)"
+	depends=("${pkgbase}-common=${pkgver}")
+	install='bacula-dir.install'
+	optdepends=(
+		"${pkgname}-sqlite3: SQLite support"
+		"${pkgname}-mariadb: MariaDB support"
+		"${pkgname}-postgresql: PostgreSQL support")
+	backup=("etc/${pkgbase}/${pkgname}.conf")
+
+	cd "${srcdir}/install"
+
+	install -Dm644 "etc/${pkgbase}/${pkgname}.conf" "${pkgdir}/etc/${pkgbase}/${pkgname}.conf"
+
+	_scripts=(
+#		'query.sql'
+		"create_${pkgbase}_database"
+		'delete_catalog_backup'
+		"drop_${pkgbase}_database"
+		"drop_${pkgbase}_tables"
+		"grant_${pkgbase}_privileges"
+		"make_${pkgbase}_tables"
+		'make_catalog_backup.pl'
+		"update_${pkgbase}_tables")
+	for script in "${_scripts[@]}"; do
+		install -Dm755 "etc/${pkgbase}/scripts/${script}" "${pkgdir}/etc/${pkgbase}/scripts/${script}"
+	done
+	for bin in "${pkgname}" bregex bwild dbcheck; do
+		install -Dm755 "usr/bin/${bin}" "${pkgdir}/usr/bin/${bin}"
+		install -Dm644 "usr/share/man/man8/${bin}.8.gz" "${pkgdir}/usr/share/man/man8/${bin}.8.gz"
+	done
+	install -Dm644 "usr/share/man/man1/bsmtp.1.gz" "${pkgdir}/usr/share/man/man1/bsmtp.1.gz"
+	install -Dm644 "usr/lib/libbacsql-${pkgver}.so" "${pkgdir}/usr/lib/libbacsql-${pkgver}.so"
+	ln -s "libbacsql-${pkgver}.so" "${pkgdir}/usr/lib/libbacsql.so"
+
+	install -Dm644 "${srcdir}/${pkgbase}-${pkgver}/platforms/systemd/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
+
+	install -Dm644 "${srcdir}/${pkgbase}-${pkgver}/scripts/logrotate" "${pkgdir}/etc/logrotate.d/${pkgbase}"
+
+	# Logwatch support
+	cd "${srcdir}/${pkgbase}-${pkgver}/scripts/logwatch"
+	install -Dm755 "${pkgbase}" "${pkgdir}/etc/logwatch/scripts/services/${pkgbase}"
+	install -Dm755 "apply${pkgbase}date" "${pkgdir}/etc/logwatch/scripts/shared/apply${pkgbase}date"
+	install -Dm644 "logfile.${pkgbase}.conf" "${pkgdir}/etc/logwatch/conf/logfiles/${pkgbase}.conf"
+	install -Dm644 "services.${pkgbase}.conf" "${pkgdir}/etc/logwatch/conf/services/${pkgbase}.conf"
+}
+
+package_bacula-dir-postgresql() {
+	pkgdesc="${pkgdesc} (Director - PostgreSQL support)"
+	depends=("${pkgbase}-dir" 'postgresql-libs')
+	conflicts=(${_dir_backends[@]/${pkgname}})
+
+	cd "${srcdir}/install"
+
+	for lib in libbaccats-postgresql libbaccats; do
+		install -Dm644 "usr/lib/${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}-${pkgver}.so"
+		ln -s "${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}.so"
+	done
+
+	for file in `find "etc/${pkgbase}/scripts" -name *postgresql*`; do
+		install -Dm755 "$file" "${pkgdir}/etc/${pkgbase}/scripts/`basename "$file"`"
+	done
+}
+
+package_bacula-dir-mariadb() {
+	pkgdesc="${pkgdesc} (Director - MariaDB support)"
+	depends=("${pkgbase}-dir" 'libmariadbclient')
+	conflicts=(${_dir_backends[@]/${pkgname}})
+	replaces=("${pkgbase}-dir-mysql")
+	provides=("${pkgbase}-dir-mysql")
+
+	cd "${srcdir}/install"
+
+	for lib in libbaccats-mysql libbaccats; do
+		install -Dm644 "usr/lib/${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}-${pkgver}.so"
+		ln -s "${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}.so"
+	done
+
+	for file in `find "etc/${pkgbase}/scripts" -name *mysql*`; do
+		install -Dm755 "$file" "${pkgdir}/etc/${pkgbase}/scripts/`basename "$file"`"
+	done
+}
+
+package_bacula-dir-sqlite3() {
+	pkgdesc="${pkgdesc} (Director - SQLite support)"
+	depends=("${pkgbase}-dir" 'sqlite')
+	conflicts=(${_dir_backends[@]/${pkgname}})
+
+	cd "${srcdir}/install"
+
+	for lib in libbaccats-sqlite3 libbaccats; do
+		install -Dm644 "usr/lib/${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}-${pkgver}.so"
+		ln -s "${lib}-${pkgver}.so" "${pkgdir}/usr/lib/${lib}.so"
+	done
+
+	for file in `find "etc/${pkgbase}/scripts" -name *sqlite3*`; do
+		install -Dm755 "$file" "${pkgdir}/etc/${pkgbase}/scripts/`basename "$file"`"
+	done
+}
