@@ -12,7 +12,7 @@ pkgname=("${pkgbase}-common" "${pkgbase}-console" "${pkgbase}-bat" "${pkgbase}-f
 pkgver=7.4.0
 pkgrel=2
 pkgdesc="${pkgbase^} - A Network Backup Tool"
-makedepends=('sqlite' 'libmariadbclient' 'postgresql-libs' 'qt4')
+makedepends=('sqlite' 'libmariadbclient' 'postgresql-libs' 'qt4' 'gcc' 'patch' 'pkg-config' 'make')
 optdepends=('openssl: network encryption between daemons')
 arch=('x86_64' 'i686' 'armv6h')
 url="http://www.${pkgbase}.org"
@@ -102,7 +102,8 @@ package_bacula-bat() {
 	# Renaming this to prevent conflict with alsa-utils
 	install -Dm755 "usr/bin/bat" "${pkgdir}/usr/bin/bacula-bat"
 	install -Dm644 "etc/${pkgbase}/bat.conf" "${pkgdir}/etc/${pkgbase}/bat.conf"
-	install -Dm644 "usr/share/man/man1/bat.1.gz" "${pkgdir}/usr/share/man/man1/bat.1.gz"
+	# Also rename manpage
+	install -Dm644 "usr/share/man/man1/bat.1.gz" "${pkgdir}/usr/share/man/man1/bacula-bat.1.gz"
 
 	install -dm755 "${pkgdir}/usr/share/applications"
 	install -Dm644 "${srcdir}/${pkgbase}-${pkgver}/scripts/bat.desktop" "${pkgdir}/usr/share/applications/bat.desktop"
