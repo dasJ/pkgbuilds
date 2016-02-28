@@ -9,6 +9,7 @@ post_upgrade() {
 	getent passwd bacula-fd >/dev/null || useradd -r -g bacula -d / -s /sbin/nologin -c "Bacula file daemon user" bacula-fd
 	chgrp bacula /var/log/bacula
 	chmod g+w /var/log/bacula
+	/usr/bin/systemd-tmpfiles --create > /dev/null 2>&1
 }
 
 post_remove() {
