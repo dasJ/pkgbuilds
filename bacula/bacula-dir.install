@@ -7,6 +7,8 @@ post_install() {
 post_upgrade() {
 	getent group bacula >/dev/null || groupadd -r bacula
 	getent passwd bacula-dir >/dev/null || useradd -r -g bacula -d / -s /sbin/nologin -c "Bacula director user" bacula-dir
+	chgrp bacula /var/log/bacula
+	chmod g+w /var/log/bacula
 }
 
 post_remove() {

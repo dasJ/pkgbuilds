@@ -18,9 +18,11 @@ arch=('x86_64' 'i686' 'armv6h')
 url="http://www.${pkgbase}.org"
 license=('AGPL3')
 source=("http://downloads.sourceforge.net/sourceforge/${pkgbase}/${pkgbase}-${pkgver}.tar.gz"
-        'qmake4.patch')
+        'qmake4.patch'
+        'tmpfiles.conf')
 sha512sums=('615cb4d9a4fd597bc794b6d4c901c777d544472f3f5b6e1cdc74d8e41279a3fd0bd6d2c30511095933a3a47a7f24da4372c538ab472eb48c0fb1db59c2a59e1a'
-            'eaa2cfbffcf629d3aff7e3691a67fd95d5407f01c8e20dd8972335d2e36d2ea9d72f0e837f4ea0d425c0484c6366f5e6586f1fe7dcf7d53ace87f00500caaef5')
+            'eaa2cfbffcf629d3aff7e3691a67fd95d5407f01c8e20dd8972335d2e36d2ea9d72f0e837f4ea0d425c0484c6366f5e6586f1fe7dcf7d53ace87f00500caaef5'
+            '25ed5ba62f8681f66c8ec859d3139429d5c561ddef56bdae494303af47ba9b13d981c137c12e49f50022eded99c60255d3284dcb034f5ecbc723012ec36757cd')
 
 prepare() {
 	cd "${srcdir}/${pkgbase}-${pkgver}"
@@ -40,7 +42,7 @@ build() {
 		--with-sqlite3                           \
 		--with-mysql                             \
 		--with-postgresql                        \
-		--with-pid-dir=/run                      \
+		--with-pid-dir=/run/bacula               \
 		--with-systemd=/usr/lib/systemd/system   \
 		--with-logdir=/var/log/${pkgbase}        \
 		--with-working-dir=/var/lib/${pkgbase}   \
@@ -76,6 +78,8 @@ package_bacula-common() {
 	install -dm755 "${pkgdir}/var/log/${pkgbase}"
 
 	install -Dm644 usr/share/man/man8/btraceback.8.gz "${pkgdir}/usr/share/man/man8/btraceback.8.gz"
+
+	install -Dm644 "${srcdir}/tmpfiles.conf" "${pkgdir}/etc/tmpfiles.d/bacula.conf"
 }
 
 package_bacula-console() {
