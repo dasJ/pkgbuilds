@@ -48,8 +48,6 @@ build() {
 		--with-working-dir=/var/lib/${pkgbase}   \
 		--with-basename=__BASENAME__             \
 		--with-x                                 \
-		--with-fd-user=bacula-fd                 \
-		--with-fd-group=bacula                   \
 		--with-sd-user=bacula-sd                 \
 		--with-sd-group=bacula                   \
 		--with-dir-user=bacula-dir               \
