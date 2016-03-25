@@ -2,7 +2,7 @@
 
 pkgbase=kubernetes
 pkgname=('kubernetes_master' 'kubernetes_node' 'kubernetes_base')
-pkgver=1.1.7
+pkgver=1.2.0
 pkgrel=2
 pkgdesc='Container Cluster Manager for Docker'
 groups=('kubernetes')
@@ -15,7 +15,7 @@ license=('Apache')
 source=("https://github.com/${pkgbase}/${pkgbase}/archive/v${pkgver}.tar.gz"
         "git://github.com/${pkgbase}/contrib"
         'kubernetes.install')
-sha512sums=('2140dbe1bcb4c0265dc17565eac098bdb82c82f7985ab090cabd783af727c84ea064fd139e8346a078069ddb4721fe6b7df14c65a4ef1003911eeae4923ee5d7'
+sha512sums=('267d0538cdb12b55a42de38c63a67ddf45e099c7736680e7cee6a9e1a5b494a023f9ee226adfa6b07cc31ed9b6be313d827b5aeb95ec071a5e513a663f8bff3e'
             'SKIP'
             '0b79eb8918681588030696f0fead40b76fd6caadcb8363a906cd42328e91b07fdd2fe4595cd2326a379027646d81830276f1e7334e73bde28aeb752328b4b05f')
 
