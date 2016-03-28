@@ -1,0 +1,51 @@
+# Maintainer: Janne Heß <jannehess@gmail.com>
+
+pkgname=sonarqube-scanner
+_realname=sonar-scanner-cli
+pkgver=2.5.1
+pkgrel=1
+pkgdesc='SonarQube Scanner'
+arch=('x86_64' 'i686')
+url='http://www.sonarqube.org/'
+license=('LGPL3')
+depends=('java-environment-common')
+makedepends=('maven' 'unzip')
+backup=("etc/${pkgname}/sonar-runner.properties")
+source=("https://github.com/SonarSource/${realname}/archive/${pkgver}.tar.gz")
+sha512sums=('29ae2bce4969409fd9cbb47f366297f31b2de5a841f853f45e3644438ab27ccb799db4da4e1078375832331d9fd69cb4a5ad11f8477efa439b1d225a324ed4f4')
+
+build() {
+	return 0
+	# Don't clutter user's home
+	cd "${srcdir}"
+	mkdir -p m2
+	echo "<settings><localRepository>`pwd`/m2</localRepository></settings>" > m2.xml
+
+	# Build it
+	cd "${_realname}-${pkgver}"
+	mvn clean install -s "${srcdir}/m2.xml" -DskipTests=true -e -B -T0.5C -DforkCount=0.5C
+}
+
+package() {
+	cd "${srcdir}/${_realname}-${pkgver}"
+
+	# Unpack runner
+	install -dm755 "${pkgdir}/usr/lib/"
+	unzip -o "target/${_realname/-cli}-${pkgver}.zip" -d "${pkgdir}/usr/lib"
+	mv "${pkgdir}/usr/lib/${_realname/-cli}-${pkgver}" "${pkgdir}/usr/lib/${pkgname}"
+
+	# Create new directories
+	install -dm755 "${pkgdir}/etc/${pkgname}"
+
+	# Move script
+	install -Dm755 "${pkgdir}/usr/lib/${pkgname}/bin/sonar-runner" "${pkgdir}/usr/bin/sonar-runner"
+	gawk -i inplace 'NR==2 {print "export SONAR_RUNNER_HOME=\"/usr/lib/sonarqube-scanner/\""} 1' "${pkgdir}/usr/bin/sonar-runner"
+
+	# Move config
+	install -Dm644 "${pkgdir}/usr/lib/${pkgname}/conf/sonar-runner.properties" "${pkgdir}/etc/${pkgname}/sonar-runner.properties"
+	rm -r "${pkgdir}/usr/lib/${pkgname}/conf"
+	ln -s "/etc/${pkgname}" "${pkgdir}/usr/lib/${pkgname}/conf"
+
+	# Clean up
+	rm -r "${pkgdir}/usr/lib/${pkgname}/bin"
+}
