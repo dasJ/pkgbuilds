@@ -1,0 +1,75 @@
+# Maintainer: Janne Heß <jannehess@gmail.com>
+
+pkgname=sonarqube
+pkgver=5.4
+pkgrel=1
+pkgdesc='Put your technical debt under control.'
+arch=('x86_64' 'i686')
+url='http://www.sonarqube.org/'
+license=('LGPL3')
+depends=('java-environment-common')
+makedepends=('maven' 'unzip')
+backup=("etc/webapps/${pkgname}/sonar.properties" "etc/webapps/${pkgname}/wrapper.conf")
+install="${pkgname}.install"
+source=("https://github.com/SonarSource/${pkgname}/archive/${pkgver}.tar.gz"
+        "${pkgname}.service")
+sha512sums=('957d4196ebe62ea41f629f29b1cf7d3118bd8d00efc71c4198f5505893031d392fc7cac5b1515e1f088c10b5f97bc119b47a4a84e3ba91fcfb8f41a057c48238'
+            '8a5b8246dae77a4b28c80bb4ca37c8b35c0b5dab38dd39b3b6b708da1ae67a572e1bc4fe47597652dabf91fb15988d87a7105d92a37a8eadc3d750be0aac8550')
+
+build() {
+	# Don't clutter user's home
+	cd "${srcdir}"
+	mkdir -p m2
+	echo "<settings><localRepository>`pwd`/m2</localRepository></settings>" > m2.xml
+
+	# Build it
+	cd "${pkgname}-${pkgver}"
+	mvn clean install -s "${srcdir}/m2.xml" -DskipTests=true -e -B -T0.5C -DforkCount=0.5C
+}
+
+package() {
+	cd "${srcdir}/${pkgname}-${pkgver}"
+
+	# Unpack sonar
+	install -dm755 "${pkgdir}/usr/share/webapps"
+	unzip -o "sonar-application/target/${pkgname}-${pkgver}.zip" -d "${pkgdir}/usr/share/webapps/"
+	mv "${pkgdir}/usr/share/webapps/${pkgname}-${pkgver}" "${pkgdir}/usr/share/webapps/${pkgname}"
+
+	# Create new directories
+	install -dm755 "${pkgdir}/var/log/${pkgname}"
+	install -dm755 "${pkgdir}/etc/webapps/${pkgname}"
+	install -dm755 "${pkgdir}/var/lib/${pkgname}"
+
+	# Move config
+	for config in sonar.properties wrapper.conf; do
+		install -Dm644 "${pkgdir}/usr/share/webapps/${pkgname}/conf/${config}" "${pkgdir}/etc/webapps/${pkgname}/${config}"
+		rm "${pkgdir}/usr/share/webapps/${pkgname}/conf/${config}"
+		ln -s "/etc/webapps/${pkgname}/${config}" "${pkgdir}/usr/share/webapps/${pkgname}/conf/"
+	done
+	
+	# Move temp
+	rm -r "${pkgdir}/usr/share/webapps/${pkgname}/temp"
+	ln -s /tmp "${pkgdir}/usr/share/webapps/${pkgname}/temp"
+
+	# Move logs
+	rm -r "${pkgdir}/usr/share/webapps/${pkgname}/logs"
+	ln -s "/var/log/${pkgname}" "${pkgdir}/usr/share/webapps/${pkgname}/logs"
+
+	# Move data and extensions
+	for dir in data extensions; do
+		mv "${pkgdir}/usr/share/webapps/${pkgname}/${dir}" "${pkgdir}/var/lib/${pkgname}"
+		ln -s "/var/lib/${pkgname}/${dir}" "${pkgdir}/usr/share/webapps/${pkgname}"
+	done
+
+	# Move pidfiles
+	for arch in 32 64; do
+		ln -s "/run/${pkgname}/SonarQube.pid" "${pkgdir}/usr/share/webapps/${pkgname}/bin/linux-x86-${arch}"
+	done
+
+	# Clean up
+	rm -r "${pkgdir}/usr/share/webapps/${pkgname}/bin/macosx-universal-64" \
+		"${pkgdir}/usr/share/webapps/${pkgname}/bin/windows-x86-32" \
+		"${pkgdir}/usr/share/webapps/${pkgname}/bin/windows-x86-64"
+	
+	install -Dm644 "${srcdir}/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
+}

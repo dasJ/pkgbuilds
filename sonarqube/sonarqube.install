@@ -1,0 +1,13 @@
+post_install() {
+	getent passwd sonarqube &>/dev/null || useradd -mc 'Sonarqube service user' -d '/usr/share/webapps/sonarqube' -s /usr/bin/nologin sonarqube &>/dev/null
+	chown -R sonarqube: /var/lib/sonarqube /var/log/sonarqube
+}
+
+post_remove() {
+	getent passwd sonarqube &>/dev/null && userdel -r sonarqube &>/dev/null || true
+	getent group sonarqube &>/dev/null && groupdel sonarqube &>/dev/null || true
+}
+
+post_upgrade() {
+	post_install
+}

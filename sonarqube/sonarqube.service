@@ -1,0 +1,23 @@
+[Unit]
+Description=Sonarqube server
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/share/webapps/sonarqube/bin/linux-x86-64/sonar.sh start
+ExecStop=/usr/share/webapps/sonarqube/bin/linux-x86-64/sonar.sh stop
+PIDFile=/run/sonarqube/SonarQube.pid
+WorkingDirectory=/usr/share/webapps
+RuntimeDirectory=sonarqube
+RuntimeDirectoryMode=700
+User=sonarqube
+Group=sonarqube
+
+ProtectSystem=full
+ProtectHome=yes
+PrivateDevices=yes
+PrivateTmp=yes
+
+
+[Install]
+WantedBy=multi-user.target
