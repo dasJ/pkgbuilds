@@ -11,11 +11,10 @@ license=('LGPL3')
 depends=('java-environment-common')
 makedepends=('maven' 'unzip')
 backup=("etc/${pkgname}/sonar-runner.properties")
-source=("https://github.com/SonarSource/${realname}/archive/${pkgver}.tar.gz")
+source=("https://github.com/SonarSource/${_realname}/archive/${pkgver}.tar.gz")
 sha512sums=('29ae2bce4969409fd9cbb47f366297f31b2de5a841f853f45e3644438ab27ccb799db4da4e1078375832331d9fd69cb4a5ad11f8477efa439b1d225a324ed4f4')
 
 build() {
-	return 0
 	# Don't clutter user's home
 	cd "${srcdir}"
 	mkdir -p m2
